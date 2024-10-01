@@ -2,7 +2,8 @@
 @tailwind components;
 @tailwind utilities;
 
-@layer base {
+
+/* @layer base {
   :root {
     --background: 0 0% 100%;
     --foreground: 222.2 47.4% 11.2%;
@@ -78,8 +79,7 @@
     @apply bg-background text-foreground;
     font-feature-settings: "rlig" 1, "calt" 1;
   }
-}
-
+} */
 
 html,
 body {
@@ -96,3 +96,4 @@ body {
 .wallet-adapter-button {
   font-family: inherit !important;
 }
+

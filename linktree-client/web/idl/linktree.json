@@ -1,0 +1,291 @@
+{
+  "address": "6jnvkMV423aCV52ieVPpfXwj3oWR8wKbR275pjNKdvgZ",
+  "metadata": {
+    "name": "linktree",
+    "version": "0.1.0",
+    "spec": "0.1.0",
+    "description": "Created with Anchor"
+  },
+  "instructions": [
+    {
+      "name": "add_links",
+      "discriminator": [
+        116,
+        86,
+        100,
+        46,
+        223,
+        210,
+        178,
+        75
+      ],
+      "accounts": [
+        {
+          "name": "linktree_account",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "arg",
+                "path": "username"
+              },
+              {
+                "kind": "account",
+                "path": "owner"
+              }
+            ]
+          }
+        },
+        {
+          "name": "owner",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "_username",
+          "type": "string"
+        },
+        {
+          "name": "urls",
+          "type": {
+            "vec": "string"
+          }
+        },
+        {
+          "name": "titles",
+          "type": {
+            "vec": "string"
+          }
+        }
+      ]
+    },
+    {
+      "name": "create_linktree_account",
+      "discriminator": [
+        104,
+        38,
+        42,
+        26,
+        176,
+        17,
+        90,
+        218
+      ],
+      "accounts": [
+        {
+          "name": "linktree_account",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "arg",
+                "path": "username"
+              },
+              {
+                "kind": "account",
+                "path": "owner"
+              }
+            ]
+          }
+        },
+        {
+          "name": "owner",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "username",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "delete_links",
+      "discriminator": [
+        234,
+        215,
+        247,
+        80,
+        170,
+        240,
+        251,
+        116
+      ],
+      "accounts": [
+        {
+          "name": "linktree_account",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "arg",
+                "path": "username"
+              },
+              {
+                "kind": "account",
+                "path": "owner"
+              }
+            ]
+          }
+        },
+        {
+          "name": "owner",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "_username",
+          "type": "string"
+        },
+        {
+          "name": "link_ids",
+          "type": {
+            "vec": "u64"
+          }
+        }
+      ]
+    },
+    {
+      "name": "delete_linktree_account",
+      "discriminator": [
+        157,
+        7,
+        7,
+        42,
+        119,
+        243,
+        97,
+        231
+      ],
+      "accounts": [
+        {
+          "name": "linktree_account",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "arg",
+                "path": "username"
+              },
+              {
+                "kind": "account",
+                "path": "owner"
+              }
+            ]
+          }
+        },
+        {
+          "name": "owner",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "_username",
+          "type": "string"
+        }
+      ]
+    }
+  ],
+  "accounts": [
+    {
+      "name": "LinkTreeAccount",
+      "discriminator": [
+        66,
+        15,
+        11,
+        164,
+        121,
+        64,
+        218,
+        198
+      ]
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "LengthInputsNotSame",
+      "msg": "Number of urls and titles must be same"
+    }
+  ],
+  "types": [
+    {
+      "name": "Link",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "id",
+            "type": "u64"
+          },
+          {
+            "name": "title",
+            "type": "string"
+          },
+          {
+            "name": "url",
+            "type": "string"
+          },
+          {
+            "name": "active",
+            "type": "bool"
+          }
+        ]
+      }
+    },
+    {
+      "name": "LinkTreeAccount",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "owner",
+            "type": "pubkey"
+          },
+          {
+            "name": "username",
+            "type": "string"
+          },
+          {
+            "name": "links",
+            "type": {
+              "vec": {
+                "defined": {
+                  "name": "Link"
+                }
+              }
+            }
+          },
+          {
+            "name": "link_counter",
+            "type": "u64"
+          }
+        ]
+      }
+    }
+  ]
+}
