@@ -34,10 +34,11 @@ pub mod linktree {
       ctx: Context<CreateLinkTreeAccount>,
       username: String
     ) -> Result<()> {
+      msg!("Creating linktree account for username: {}", username);
       let linktree_account = &mut ctx.accounts.linktree_account;
       linktree_account.owner = ctx.accounts.owner.key();
       linktree_account.username = username;
-
+      msg!("Linktree account created successfully");
       Ok(())
     }
 
@@ -45,6 +46,7 @@ pub mod linktree {
       _ctx: Context<DeleteLinkTreeAccount>,
       _username: String,
     ) -> Result<()> {
+      msg!("Deleting linktree account");
       Ok(())
     }
 
@@ -54,7 +56,7 @@ pub mod linktree {
       urls: Vec<String>,
       titles: Vec<String>
     ) -> Result<()> {
-
+      msg!("Adding links");
       require!(urls.len() == titles.len(), ErrorCode::LengthInputsNotSame);
 
       let linktree_account = &mut ctx.accounts.linktree_account;
@@ -65,6 +67,7 @@ pub mod linktree {
       .map(|(url, title)| {
           let new_id = linktree_account.link_counter;
           linktree_account.link_counter += 1;
+          msg!("Adding link: id={}, title={}, url={}", new_id, title, url);
           Link {
           id: new_id,
           url,
@@ -75,21 +78,22 @@ pub mod linktree {
       .collect();
       
       ctx.accounts.linktree_account.links.extend(new_links);
+      msg!("Links added successfully");
       Ok(())
     }
-
     pub fn delete_links(
       ctx: Context<DeleteLinks>,
       _username: String,
       link_ids: Vec<u64>
     ) -> Result<()> {
+      msg!("Deleting links");
       let linktree_account = &mut ctx.accounts.linktree_account;
-
+      let initial_count = linktree_account.links.len();
       linktree_account.links.retain(|link| !link_ids.contains(&link.id));
-
+      let deleted_count = initial_count - linktree_account.links.len();
+      msg!("Deleted {} links", deleted_count);
       Ok(())
     }
-
 }
 
 
