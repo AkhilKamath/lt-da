@@ -13,7 +13,7 @@ import {
   LinktreeButtons,
 } from './linktree-ui';
 
-export default function AccountDetailFeature() {
+export default function LinktreeDetailFeature() {
   const params = useParams();
   const address = useMemo(() => {
     if (!params.address) {

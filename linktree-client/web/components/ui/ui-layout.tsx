@@ -5,7 +5,7 @@ import * as React from 'react';
 import { ReactNode, Suspense, useEffect, useRef } from 'react';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { useParams, usePathname } from 'next/navigation';
 
 import { AccountChecker } from '../account/account-ui';
 import {
@@ -23,6 +23,10 @@ export function UiLayout({
   links: { label: string; path: string }[];
 }) {
   const pathname = usePathname();
+
+  if(pathname.startsWith('/lt') && pathname.split('/').length === 3) {
+    return <div>{children}</div>
+  }
 
   return (
     <div className="h-full flex flex-col">
