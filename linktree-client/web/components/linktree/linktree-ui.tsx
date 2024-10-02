@@ -71,7 +71,7 @@ export function AccountBalanceCheck({ address }: { address: PublicKey }) {
   return null;
 }
 
-export function LTAddLinks({address, owner, username}: {address: PublicKey, owner: PublicKey, username: string}) {
+export function LTAddLinks({ address, username}: {address: PublicKey, username: string}) {
   const wallet = useWallet();
   const [showModal, setShowModal] = useState(false);
 
@@ -85,7 +85,7 @@ export function LTAddLinks({address, owner, username}: {address: PublicKey, owne
       />
       <div className="space-x-2">
         <motion.button
-          disabled={wallet.publicKey?.toString() !== owner.toString()}
+          disabled={wallet.publicKey?.toString() !== address.toString()}
           className="px-5 py-2 rounded-lg border border-linktree-fg"
           onClick={() => setShowModal(true)}
           whileHover={"hover"}
@@ -260,7 +260,7 @@ export function LTPage({ address }: { address: PublicKey }) {
               <div className="mx-auto px-4 py-8">
                 <LTPageHero isLoading={query.isLoading} accountInfo={accountInfo} />
               </div>
-                <LTAddLinks address={address} owner={accountInfo?.owner || new PublicKey('')} username={accountInfo?.username || ''}/>
+                <LTAddLinks address={accountInfo?.owner || new PublicKey('')} username={accountInfo?.username || ''}/>
                 <LTLinksList isLoading={query.isLoading} accountInfo={accountInfo} />
             </div>
           )

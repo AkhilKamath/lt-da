@@ -119,10 +119,10 @@ export function useAddLinks({ address, anchorWallet, username }: { address: Publ
           'confirmed'
         );
 
-        console.log(signature);
+        console.log('AAA', signature);
         return signature;
       } catch (error: unknown) {
-        console.log('error', `Transaction failed! ${error}`, signature);
+        console.log('error', 'Transaction failed!!', error, signature, 'aaa', error?.message);
         return;
       }
     },
@@ -338,6 +338,7 @@ async function addLinksTransaction({
   const instructions: TransactionInstruction[] = [];
   const titles = links.map(l => l.title)
   const urls = links.map(l => l.url)
+  console.log('txn data', username, urls, titles)
   const ix = await program.methods.addLinks(username, urls, titles)
   .accounts({owner: publicKey})
   .instruction()
