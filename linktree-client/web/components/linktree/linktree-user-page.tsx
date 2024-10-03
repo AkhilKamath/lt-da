@@ -42,21 +42,21 @@ export default function LinktreeUserPage() {
     });
   }, []);
 
-  const address = useMemo(() => {
-    if(!params?.address) return;
+  const pdaAddress = useMemo(() => {
+    if(!params?.pdaAddress) return;
 
     try {
-      return new PublicKey(params.address)
+      return new PublicKey(params.pdaAddress)
     } catch (e) {
       console.error('Invalid pda ', e);
     }
   }, [params])
 
-  if(!address) {
+  if(!pdaAddress) {
     return redirect(`/linktree`)
   }
   
   return (
-    <LTPage address={address}/>
+    <LTPage pdaAddress={pdaAddress}/>
   )
 }

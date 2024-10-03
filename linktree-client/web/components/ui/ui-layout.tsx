@@ -117,7 +117,7 @@ export function AppModal({
 
   return (
     <dialog className="modal" ref={dialogRef}>
-      <div className="modal-box space-y-5">
+      <div className="modal-box space-y-5 max-w-2xl">
         <h3 className="font-bold text-lg">{title}</h3>
         {children}
         <div className="modal-action">

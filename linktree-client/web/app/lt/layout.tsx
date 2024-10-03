@@ -10,7 +10,7 @@ export default function SpecialPageLayout({
   return (
     <div className="h-screen w-full flex flex-col">
       <header>
-        <h1>Special Page Header</h1>
+        {/* <h1>Special Page Header</h1> */}
       </header>
       <main className="flex-grow overflow-auto">
       <Suspense
@@ -25,7 +25,7 @@ export default function SpecialPageLayout({
 
       </main>
       <footer>
-        <p>Special Page Footer</p>
+        {/* <p>Special Page Footer</p> */}
       </footer>
     </div>
   );

@@ -71,9 +71,13 @@ export function AccountBalanceCheck({ address }: { address: PublicKey }) {
   return null;
 }
 
-export function LTAddLinks({ address, username}: {address: PublicKey, username: string}) {
+export function LTAddLinks({ address, pdaAddress, username}: {address: PublicKey, pdaAddress: PublicKey, username: string}) {
   const wallet = useWallet();
   const [showModal, setShowModal] = useState(false);
+
+  function isButtonDisabled() {
+    return wallet.publicKey?.toString() !== address.toString()
+  }
 
   return (
     <div>
@@ -81,27 +85,35 @@ export function LTAddLinks({ address, username}: {address: PublicKey, username: 
         hide={() => setShowModal(false)}
         show={showModal}
         address={address}
+        pdaAddress={pdaAddress}
         username={username}
       />
       <div className="space-x-2">
-        <motion.button
-          disabled={wallet.publicKey?.toString() !== address.toString()}
-          className="px-5 py-2 rounded-lg border border-linktree-fg"
-          onClick={() => setShowModal(true)}
-          whileHover={"hover"}
-          variants={{
-            hover: {
-              scale: 1.05,
-              boxShadow: "0 0 15px var(--lt-foreground)",
-              filter: "brightness(1.2)",
-              transition: {
-                duration: 0.3
+        {
+          !isButtonDisabled() &&
+          <motion.button
+            disabled={isButtonDisabled()}
+            className="px-5 py-2 rounded-lg border border-linktree-fg hover:cursor-pointer 
+            disabled:opacity-50 disabled:cursor-not-allowed 
+            disabled:bg-linktree-bg disabled:border-linktree-fg/30 disabled:text-linktree-fg/50
+            transition-all duration-300
+            "
+            onClick={() => { console.log('ss2'); setShowModal(true) }}
+            whileHover={isButtonDisabled() ? undefined : "hover"}
+            variants={{
+              hover: {
+                scale: 1.05,
+                boxShadow: "0 0 15px var(--lt-foreground)",
+                filter: "brightness(1.2)",
+                transition: {
+                  duration: 0.3
+                }
               }
-            }
-          }}
-        >
-          Add Link
-        </motion.button>
+            }}
+          >
+            Add Link
+          </motion.button>
+        }
       </div>
     </div>
   )
@@ -233,14 +245,14 @@ interface LTAccountInfo {
   links: any[];
 }
 
-export function LTPage({ address }: { address: PublicKey }) {
+export function LTPage({ pdaAddress }: { pdaAddress: PublicKey }) {
   const anchorWallet = useAnchorWallet()
   
-  if (!address || !anchorWallet ) {
+  if (!pdaAddress || !anchorWallet ) {
     return <div>Wallet not connected ltp</div>;
   }
   
-  const query = useGetLinktreeAccountInfo({ address, anchorWallet })
+  const query = useGetLinktreeAccountInfo({ pdaAddress, anchorWallet })
   const client = useQueryClient();
 
   const accountInfo = useMemo(() => {
@@ -260,7 +272,7 @@ export function LTPage({ address }: { address: PublicKey }) {
               <div className="mx-auto px-4 py-8">
                 <LTPageHero isLoading={query.isLoading} accountInfo={accountInfo} />
               </div>
-                <LTAddLinks address={accountInfo?.owner || new PublicKey('')} username={accountInfo?.username || ''}/>
+                <LTAddLinks address={accountInfo?.owner || new PublicKey('')} pdaAddress={pdaAddress} username={accountInfo?.username || ''}/>
                 <LTLinksList isLoading={query.isLoading} accountInfo={accountInfo} />
             </div>
           )
@@ -313,7 +325,7 @@ export function LTLinksList({isLoading, accountInfo}: {isLoading: boolean, accou
       </ul>
     </div> :
     <div className='mt-8 w-full sm:w-1/2'>
-      <ul>
+      <ul className='space-y-5'>
         {
           accountInfo?.links.map((link, idx) => {
             return (
@@ -338,23 +350,78 @@ function ModalAddLinks({
   hide,
   show,
   address,
+  pdaAddress,
   username
 }: {
   hide: () => void,
   show: boolean,
   address: PublicKey,
+  pdaAddress: PublicKey,
   username: string,
 }) {
   const anchorWallet = useAnchorWallet();
 
-  const [title, setTitle] = useState('')
-  const [url, setUrl] = useState('')
+  const [urls, setUrls] = useState([''])
+  const [titles, setTitles] = useState([''])
+  const [numLinks, setNumLinks] = useState(1)
 
   if (!address || !anchorWallet || !username.length ) {
     return <div>Wallet not connected</div>;
   }
 
-  const mutation = useAddLinks({address, anchorWallet, username})
+  function addFieldRow() {
+    setNumLinks(numLinks + 1)
+    setUrls([...urls, ''])
+    setTitles([...titles, ''])
+  }
+
+  function removeFieldRow(idx: number) {
+    setNumLinks(numLinks - 1)
+    setUrls(urls.filter((_, i) => i !== idx))
+    setTitles(titles.filter((_, i) => i !== idx))
+  }
+
+  function shouldSubmitBeDisabled() {
+    if(mutation.isPending)
+      return true
+    if(urls.some(val => val.trim() === ''))
+      return true
+    if(titles.some(val => val.trim() === ''))
+      return true
+    return false
+  }
+
+  const mutation = useAddLinks({address, anchorWallet, pdaAddress, username})
+
+  const inputFields = Array.from({length: numLinks}, (_, idx) => {
+    return (
+      <div key={idx} className='flex space-x-5'>
+          <input
+              disabled={mutation.isPending}
+              type="text"
+              placeholder="title"
+              className="input input-bordered"
+              value={titles[idx]}
+              onChange={(e) => setTitles(prev => prev.map((title, i) => i === idx ? e.target.value : title))}
+          />
+          <input
+            disabled={mutation.isPending}
+            type="text"
+            placeholder="url"
+            className="input input-bordered"
+            value={urls[idx]}
+            onChange={(e) => setUrls(prev => prev.map((url, i) => i === idx ? e.target.value : url))}
+          />
+          <div className="space-x-2">
+            <button className='btn btn-square' disabled={numLinks === 1 && idx === 0} onClick={() => removeFieldRow(idx)}>-</button>
+            {
+              idx === numLinks - 1 &&
+              <button className='btn btn-square' onClick={addFieldRow}>+</button>
+            }
+          </div>
+      </div>
+    )
+  })
 
   return (
     <div className='text-white'>
@@ -362,32 +429,22 @@ function ModalAddLinks({
         hide={hide}
         show={show}
         title='Add Links'
-        submitDisabled={!title || !url || mutation.isPending}
+        submitDisabled={shouldSubmitBeDisabled()}
         submit={() => {
           const links: Link[] = []
-          links.push({title, url})
+          urls.forEach((url, idx) => {
+            links.push({
+              url: url.trim(),
+              title: titles[idx].trim()
+            })
+          })
           mutation
           .mutateAsync({links})
           .then(() => hide())
         }}
 
       >
-        <input
-          disabled={mutation.isPending}
-          type="text"
-          placeholder="title"
-          className="input input-bordered w-full"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-        />
-        <input
-          disabled={mutation.isPending}
-          type="text"
-          placeholder="url"
-          className="input input-bordered w-full"
-          value={url}
-          onChange={(e) => setUrl(e.target.value)}
-        />
+        {inputFields}
       </AppModal>
     </div>
   )

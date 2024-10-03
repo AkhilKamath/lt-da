@@ -64,19 +64,19 @@ export function useGetLinktreeAccounts({ address, anchorWallet }: { address: Pub
   })
 }
 
-export function useGetLinktreeAccountInfo({ address, anchorWallet }: { address: PublicKey, anchorWallet: AnchorWallet }) {
+export function useGetLinktreeAccountInfo({ pdaAddress, anchorWallet }: { pdaAddress: PublicKey, anchorWallet: AnchorWallet }) {
   const { connection } = useConnection()
   return useQuery({
     queryKey: [
       'get-linktree-account-info',
-      { endpoint: connection.rpcEndpoint, address },
+      { endpoint: connection.rpcEndpoint, pdaAddress },
     ],
     queryFn: async () => {
       const anchorProvider = new AnchorProvider(connection, anchorWallet)
       const program = new Program<Linktree>(idl as Linktree, anchorProvider);
       let accountInfo
       try {
-        accountInfo = await program.account.linkTreeAccount.fetch(address)
+        accountInfo = await program.account.linkTreeAccount.fetch(pdaAddress)
       } catch (error) {
         console.error('error in fetching account info', error)
       }
@@ -85,7 +85,7 @@ export function useGetLinktreeAccountInfo({ address, anchorWallet }: { address: 
   }) 
 }
 
-export function useAddLinks({ address, anchorWallet, username }: { address: PublicKey, anchorWallet: AnchorWallet, username: string }) {
+export function useAddLinks({ address, anchorWallet, pdaAddress, username }: { address: PublicKey, anchorWallet: AnchorWallet, pdaAddress: PublicKey, username: string }) {
   const { connection } = useConnection();
   const transactionToast = useTransactionToast();
   const wallet = useWallet();
@@ -134,7 +134,7 @@ export function useAddLinks({ address, anchorWallet, username }: { address: Publ
         client.invalidateQueries({
           queryKey: [
             'get-linktree-account-info',
-            { endpoint: connection.rpcEndpoint, address },
+            { endpoint: connection.rpcEndpoint, pdaAddress },
           ],
         }),
       ]);
