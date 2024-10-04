@@ -10,10 +10,13 @@ pub struct LinkTreeAccount {
   pub owner: Pubkey,
   #[max_len(20)]
   pub username: String,
+  #[max_len(200)]
+  pub avatar_uri: String,
   #[max_len(10)]
   pub links: Vec<Link>,
-  // pub id: u64,
   pub link_counter: u64,
+  #[max_len(7)]
+  pub color_hex: String,
 }
 
 #[derive(InitSpace, AnchorSerialize, AnchorDeserialize, Clone, Default)]
@@ -94,6 +97,30 @@ pub mod linktree {
       msg!("Deleted {} links", deleted_count);
       Ok(())
     }
+
+    pub fn edit_avatar_uri(
+      ctx: Context<EditAvatarURI>,
+      _username: String,
+      avatar_uri: String
+    ) -> Result<()> {
+      msg!("Editing avatar URI");
+      let linktree_account = &mut ctx.accounts.linktree_account;
+      linktree_account.avatar_uri = avatar_uri;
+      msg!("Edited avatar URI successfully");
+      Ok(())
+    }
+
+    pub fn edit_color_hex(
+      ctx: Context<EditColorHex>,
+      _username: String,
+      color_hex: String
+    ) -> Result<()> {
+      msg!("Editing color hex");
+      let linktree_account = &mut ctx.accounts.linktree_account;
+      linktree_account.color_hex = color_hex;
+      msg!("Edited color hex successfully");
+      Ok(())
+    }
 }
 
 
@@ -148,6 +175,40 @@ pub struct AddLinks<'info> {
 #[derive(Accounts)]
 #[instruction(username: String, link_ids: Vec<u64>)]
 pub struct DeleteLinks<'info> {
+  #[account(
+    mut,
+    seeds = [username.as_bytes(), owner.key().as_ref()],
+    bump,
+    realloc = 8 + LinkTreeAccount::INIT_SPACE,
+    realloc::payer = owner,
+    realloc::zero = true,
+  )]
+  pub linktree_account: Account<'info, LinkTreeAccount>,
+  #[account(mut)]
+  pub owner: Signer<'info>,
+  pub system_program: Program<'info, System>
+}
+
+#[derive(Accounts)]
+#[instruction(username: String, avatar_uri: String)]
+pub struct EditAvatarURI<'info> {
+  #[account(
+    mut,
+    seeds = [username.as_bytes(), owner.key().as_ref()],
+    bump,
+    realloc = 8 + LinkTreeAccount::INIT_SPACE,
+    realloc::payer = owner,
+    realloc::zero = true,
+  )]
+  pub linktree_account: Account<'info, LinkTreeAccount>,
+  #[account(mut)]
+  pub owner: Signer<'info>,
+  pub system_program: Program<'info, System>
+}
+
+#[derive(Accounts)]
+#[instruction(username: String, color_hex: String)]
+pub struct EditColorHex<'info> {
   #[account(
     mut,
     seeds = [username.as_bytes(), owner.key().as_ref()],
