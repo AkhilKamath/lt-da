@@ -1,3 +1,5 @@
+import { ColorKey } from "./types"
+
 export const colors = {
   red: {
     '--lt-background': '#ef4444',
@@ -23,4 +25,13 @@ export const colors = {
     '--lt-background': '#ec4899',
     '--lt-foreground': '#000000'
   },
+}
+
+export const hexToColorsKeyMap: Record<string, ColorKey> = {
+  '#ef4444': 'red',
+  '#eab308': 'yellow',
+  '#3b82f6': 'blue',
+  '#4c1d95': 'violet',
+  '#22c55e': 'green',
+  '#ec4899': 'pink'
 }

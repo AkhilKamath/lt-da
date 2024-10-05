@@ -2,25 +2,28 @@
 
 import { PublicKey } from "@solana/web3.js"
 import { redirect, useParams } from "next/navigation"
-import { useEffect, useMemo } from "react"
+import { createContext, useEffect, useMemo, useState } from "react"
 import { LTPage } from "./linktree-ui"
 import { colors } from "./colors"
+import { ThemeContext } from "./contexts"
+import { ColorKey } from "./types"
+
+const pageThemes = colors
 
 export default function LinktreeUserPage() {
 
-  const pageThemes = colors
-
   const params = useParams()
+
+  const [currentTheme, setCurrentTheme] = useState<ColorKey>('yellow')
 
   //set themes
   useEffect(() => {
-    const theme = 'yellow'
-    const selectedTheme = pageThemes[theme] || pageThemes.red;
+    const selectedTheme = pageThemes[currentTheme] || pageThemes.red;
     
     Object.entries(selectedTheme).forEach(([key, value]) => {
       document.documentElement.style.setProperty(key, value);
     });
-  }, []);
+  }, [currentTheme]);
 
   const pdaAddress = useMemo(() => {
     if(!params?.pdaAddress) return;
@@ -37,6 +40,8 @@ export default function LinktreeUserPage() {
   }
   
   return (
-    <LTPage pdaAddress={pdaAddress}/>
+    <ThemeContext.Provider value={{currentTheme, setCurrentTheme}}>
+      <LTPage pdaAddress={pdaAddress}/>
+    </ThemeContext.Provider>
   )
 }

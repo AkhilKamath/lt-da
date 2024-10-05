@@ -3,17 +3,19 @@ import { motion } from 'framer-motion'
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Skeleton } from "@/components/ui/skeleton"
 
-import { useAnchorWallet, useWallet } from '@solana/wallet-adapter-react';
+import { useAnchorWallet, useConnection, useWallet } from '@solana/wallet-adapter-react';
 import { LAMPORTS_PER_SOL, PublicKey } from '@solana/web3.js';
-import { IconPlus, IconRefresh, IconSettings2 } from '@tabler/icons-react';
+import { IconPlus, IconRefresh, IconSettings2, IconTrash, IconTrashX } from '@tabler/icons-react';
 import { useQueryClient, UseQueryResult } from '@tanstack/react-query';
-import { useEffect, useMemo, useState } from 'react';
+import { useContext, useEffect, useMemo, useState } from 'react';
 import { AppModal, ellipsify } from '../ui/ui-layout';
 import { useCluster } from '../cluster/cluster-data-access';
 import { ExplorerLink } from '../cluster/cluster-ui';
 import {
   useAddLinks,
   useCreateLinktreeAccount,
+  useDeleteLinktreeAccount,
+  useEditSettings,
   useGetBalance,
   useGetLinktreeAccountInfo,
   useGetLinktreeAccounts,
@@ -22,7 +24,9 @@ import {
 import { Link, LTAccountInfo } from './types';
 
 import { styles } from './styles';
-import { colors } from './colors';
+import { colors, hexToColorsKeyMap } from './colors';
+import { UNCHANGED } from './constants';
+import { ThemeContext } from './contexts';
 
 export function AccountBalance({ address }: { address: PublicKey }) {
   const query = useGetBalance({ address });
@@ -78,9 +82,21 @@ export function LTButtons({ address, pdaAddress, accountInfo }: { address: Publi
   const wallet = useWallet();
   const [showAddLinksModal, setShowAddLinksModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false);
+  const { connection } = useConnection();
+  const client = useQueryClient();
 
   function isButtonDisabled() {
     return wallet.publicKey?.toString() !== address.toString()
+  }
+
+  const buttonAnimations = {
+    hover: {
+      scale: 1.07,
+    },
+    tap: {
+      scale: 0.955,
+    }
   }
 
   return (
@@ -100,6 +116,13 @@ export function LTButtons({ address, pdaAddress, accountInfo }: { address: Publi
         pdaAddress={pdaAddress}
         username={accountInfo?.username || ''}
       />
+      <ModalDeleteAccount
+        hide={() => setShowDeleteAccountModal(false)}
+        show={showDeleteAccountModal}
+        address={address}
+        pdaAddress={pdaAddress}
+        username={accountInfo?.username || ''}
+      />
       <div className="flex space-x-2">
         {!isButtonDisabled() && 
           <>
@@ -107,12 +130,8 @@ export function LTButtons({ address, pdaAddress, accountInfo }: { address: Publi
               className={styles.ltPageButton}
               disabled={isButtonDisabled()}
               onClick={() => setShowSettingsModal(true)}
-              whileHover={{
-                scale: 1.025,
-              }}
-              whileTap={{
-                scale: 0.955,
-              }}
+              whileHover={buttonAnimations.hover}
+              whileTap={buttonAnimations.tap}
             >
               <IconSettings2 size={20} />
             </motion.button>
@@ -120,21 +139,33 @@ export function LTButtons({ address, pdaAddress, accountInfo }: { address: Publi
               className={styles.ltPageButton}
               disabled={isButtonDisabled()}
               onClick={() => setShowAddLinksModal(true)}
-              whileHover={{
-                scale: 1.025,
-              }}
-              whileTap={{
-                scale: 0.955,
-              }}
+              whileHover={buttonAnimations.hover}
+              whileTap={buttonAnimations.tap}
             >
               <IconPlus size={20} />
+            </motion.button>
+            <motion.button
+              className={styles.ltPageButton}
+              disabled={isButtonDisabled()}
+              onClick={() => setShowDeleteAccountModal(true)}
+              whileHover={buttonAnimations.hover}
+              whileTap={buttonAnimations.tap}
+            >
+              <IconTrash size={20} />
             </motion.button>
           </>
         }
         <motion.button
           disabled={isButtonDisabled()}
           className={styles.ltPageButton}
-          // onClick={() => setShowAddLinksModal(true)}
+          onClick={async () => {
+            await client.invalidateQueries({
+              queryKey: [
+                'get-linktree-account-info',
+                { endpoint: connection.rpcEndpoint, pdaAddress },
+              ],
+            });
+          }}
           whileHover={{
             scale: 1.025,
           }}
@@ -284,6 +315,13 @@ export function LTPage({ pdaAddress }: { pdaAddress: PublicKey }) {
     return query.data
   }, [query.data])
 
+  const { setCurrentTheme } = useContext(ThemeContext)
+
+  useEffect(() => {
+    if(accountInfo)
+      setCurrentTheme(hexToColorsKeyMap[accountInfo?.colorHex] || 'yellow')
+  }, [accountInfo])
+
   return (
     <div className={`min-h-screen overflow-auto bg-linktree-bg text-linktree-fg`}>
       {
@@ -314,7 +352,7 @@ export function LTPageHero({ isLoading, accountInfo }: { isLoading: boolean, acc
     </div> :
       <div className='flex flex-col items-center'>
         <Avatar>
-          <AvatarImage src="https://github.com/shadcn.png" />
+          <AvatarImage src={accountInfo?.avatarUri || "https://github.com/shadcn.png"} />
           <AvatarFallback>{accountInfo?.username}</AvatarFallback>
         </Avatar>
         <span className='font-semibold mt-2'>@{accountInfo?.username}</span>
@@ -324,18 +362,30 @@ export function LTPageHero({ isLoading, accountInfo }: { isLoading: boolean, acc
 
 export function LTLink({ title, url }: { title: string, url: string }) {
   return (
-    <motion.a href={url} target="_blank" className='block py-5 rounded-full border border-linktree text-center font-bold'
-      variants={{
-        hover: {
-          scale: 1.05,
-          backgroundColor: 'var(--lt-foreground)',
-          color: 'var(--lt-background)'
-        }
-      }}
-      whileHover={"hover"}
-    >
-      {title}
-    </motion.a>
+    <div className='flex gap-x-5 w-full'>
+      <motion.a href={url} target="_blank" className='flex-grow block py-5 rounded-full border border-linktree text-center font-bold'
+        variants={{
+          hover: {
+            scale: 1.05,
+            backgroundColor: 'var(--lt-foreground)',
+            color: 'var(--lt-background)'
+          }
+        }}
+        whileHover={"hover"}
+      >
+        {title}
+      </motion.a>
+      {/* <motion.button
+        whileHover={{
+          scale: 1.2
+        }}
+        whileTap={{
+          scale: 0.9
+        }}
+      >
+        <IconTrashX size={20}/>
+      </motion.button> */}
+    </div>
   )
 }
 
@@ -388,22 +438,25 @@ function ModalSettings({
 }) {
   const anchorWallet = useAnchorWallet();
 
-  const [colorHex, setColorHex] = useState(accountInfo?.colorHex || '')
-  const [avatarURI, setAvatarURI] = useState(accountInfo?.avatarUri || '')
+  const currentColorHex = accountInfo?.colorHex;
+  const currentAvatarUri = accountInfo?.avatarUri;
+
+  const [colorHex, setColorHex] = useState(currentColorHex || '')
+  const [avatarUri, setAvatarUri] = useState(currentAvatarUri || '')
 
   if (!address || !anchorWallet || !username.length) {
     return <div>Wallet not connected</div>;
   }
 
   function shouldSubmitBeDisabled() {
-    return mutation.isPending || colorHex.trim() === '' || avatarURI.trim() === ''
+    return mutation.isPending || (colorHex.trim() === '' && avatarUri.trim() === '') || (colorHex === currentColorHex && avatarUri === currentAvatarUri)
   }
 
-  const mutation = useAddLinks({ address, anchorWallet, pdaAddress, username })
+  const mutation = useEditSettings({ address, anchorWallet, pdaAddress, username })
 
   function ColorSquare({color}: {color: {'--lt-background': string}}) {
     return (
-      <motion.div className='input input-bordered w-10 h-10 cursor-pointer' 
+      <motion.div className={`input input-bordered w-10 h-10 cursor-pointer ${colorHex === color['--lt-background'] ? 'border-white border-2' : ''}`}
         style={{
           backgroundColor: color['--lt-background']
         }}
@@ -425,43 +478,41 @@ function ModalSettings({
         title='Settings'
         submitDisabled={shouldSubmitBeDisabled()}
         submit={() => {
-          // const links: Link[] = []
-          // urls.forEach((url, idx) => {
-          //   links.push({
-          //     url: url.trim(),
-          //     title: titles[idx].trim()
-          //   })
-          // })
-          // mutation
-          //   .mutateAsync({ links })
-          //   .then(() => hide())
+          mutation
+            .mutateAsync({
+              avatarUri: avatarUri === currentAvatarUri ? UNCHANGED : avatarUri, 
+              colorHex: colorHex === currentColorHex ? UNCHANGED : colorHex, 
+            })
+            .then(() => hide())
         }}
 
       >
-        <label htmlFor='avatarURI'>Avatar URI</label>
-        <input
-          name='avatarURI'
-          disabled={mutation.isPending}
-          type="url"
-          placeholder="title"
-          className="input input-bordered w-full"
-          value={avatarURI}
-          onChange={(e) => setAvatarURI(e.target.value)}
-        />
-        <label htmlFor='colorHex'>Color</label>
-        <input
-          hidden={true}
-          name='colorHex'
-          type="color"
-          value={colorHex}
-        />
-        <div className='grid grid-cols-3 w-1/4 gap-y-2 place-items-center'>
-          <ColorSquare color={colors.red}/>
-          <ColorSquare color={colors.yellow}/>
-          <ColorSquare color={colors.green}/>
-          <ColorSquare color={colors.blue}/>
-          <ColorSquare color={colors.violet}/>
-          <ColorSquare color={colors.pink}/>
+        <div className='space-y-5'>
+          <label htmlFor='avatarUri'>Avatar URI</label>
+          <input
+            name='avatarUri'
+            disabled={mutation.isPending}
+            type="url"
+            placeholder="title"
+            className="input input-bordered w-full"
+            value={avatarUri}
+            onChange={(e) => setAvatarUri(e.target.value)}
+          />
+          <div>Background Color</div>
+          <input
+            hidden={true}
+            name='colorHex'
+            type="color"
+            value={colorHex}
+          />
+          <div className='grid grid-cols-3 w-1/4 gap-y-2 place-items-center'>
+            <ColorSquare color={colors.red}/>
+            <ColorSquare color={colors.yellow}/>
+            <ColorSquare color={colors.green}/>
+            <ColorSquare color={colors.blue}/>
+            <ColorSquare color={colors.violet}/>
+            <ColorSquare color={colors.pink}/>
+          </div>
         </div>
       </AppModal>
     </div>
@@ -473,7 +524,7 @@ function ModalAddLinks({
   show,
   address,
   pdaAddress,
-  username
+  username,
 }: {
   hide: () => void,
   show: boolean,
@@ -571,6 +622,49 @@ function ModalAddLinks({
     </div>
   )
 }
+
+function ModalDeleteAccount({
+  hide,
+  show,
+  address,
+  pdaAddress,
+  username
+}: {
+  hide: () => void,
+  show: boolean,
+  address: PublicKey,
+  pdaAddress: PublicKey,
+  username: string,
+}) {
+  const wallet = useWallet();
+  const anchorWallet = useAnchorWallet();
+
+  if (!address || !wallet.sendTransaction || !anchorWallet) {
+    return <div>Wallet not connected</div>;
+  }
+
+  const mutation = useDeleteLinktreeAccount({ address, anchorWallet });
+
+  return (
+    <div className='text-white'>
+      <AppModal
+        hide={hide}
+        show={show}
+        title="Delete"
+        submitDisabled={!username || mutation.isPending}
+        submitLabel="Yes, Delete"
+        submit={() => {
+          mutation
+            .mutateAsync({ username })
+            .then(() => hide());
+        }}
+      >
+        <span>We are sorry to see you go, are you sure you want to go ahead?</span>
+      </AppModal>
+    </div>
+  )
+}
+
 
 function ModalCreate({
   hide,

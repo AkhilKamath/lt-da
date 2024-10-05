@@ -19,6 +19,7 @@ import { AnchorProvider, Program, Wallet } from '@coral-xyz/anchor';
 import { Linktree } from '@/idl/linktree';
 import idl from '@/idl/linktree.json';
 import { Link } from './types';
+import { UNCHANGED } from './constants';
 
 const LINK_TREE_ACCOUNT_NAME = 'linkTreeAccount'
 
@@ -92,6 +93,66 @@ export function useGetLinktreeAccountInfo({ pdaAddress, anchorWallet }: { pdaAdd
   }) 
 }
 
+export function useEditSettings({ address, anchorWallet, pdaAddress, username }: { address: PublicKey, anchorWallet: AnchorWallet, pdaAddress: PublicKey, username: string }) {
+  const { connection } = useConnection();
+  const transactionToast = useTransactionToast();
+  const wallet = useWallet();
+  const client = useQueryClient();
+
+  const anchorProvider = new AnchorProvider(connection, anchorWallet);
+  const program = new Program<Linktree>(idl as Linktree, anchorProvider);
+
+  return useMutation({
+    mutationKey: [
+      'edit-settings',
+      { endpoint: connection.rpcEndpoint, address },
+    ],
+    mutationFn: async (input: { avatarUri: string, colorHex: string }) => {
+      let signature: TransactionSignature = '';
+      try {
+        const { transaction, latestBlockhash } = await editSettingsTransaction({
+          publicKey: address,
+          username,
+          avatarUri: input.avatarUri,
+          colorHex: input.colorHex,
+          connection,
+          program
+        })
+        // Send transaction and await for signature
+        signature = await wallet.sendTransaction(transaction, connection);
+
+        // Send transaction and await for signature
+        await connection.confirmTransaction(
+          { signature, ...latestBlockhash },
+          'confirmed'
+        );
+
+        console.log(signature);
+        return signature;
+      } catch (error: unknown) {
+        console.log('error', 'Transaction failed!!', error);
+        return;
+      }
+    },
+    onSuccess: (signature) => {
+      if(signature) {
+        transactionToast(signature)
+      }
+      return Promise.all([
+        client.invalidateQueries({
+          queryKey: [
+            'get-linktree-account-info',
+            { endpoint: connection.rpcEndpoint, pdaAddress },
+          ],
+        }),
+      ]);
+    },
+    onError: (error) => {
+      toast.error(`Transaction failed! ${error}`);
+    }
+  })
+}
+
 export function useAddLinks({ address, anchorWallet, pdaAddress, username }: { address: PublicKey, anchorWallet: AnchorWallet, pdaAddress: PublicKey, username: string }) {
   const { connection } = useConnection();
   const transactionToast = useTransactionToast();
@@ -126,10 +187,10 @@ export function useAddLinks({ address, anchorWallet, pdaAddress, username }: { a
           'confirmed'
         );
 
-        console.log('AAA', signature);
+        console.log(signature);
         return signature;
       } catch (error: unknown) {
-        console.log('error', 'Transaction failed!!', error, signature, 'aaa', error?.message);
+        console.log('error', 'Transaction failed!', error);
         return;
       }
     },
@@ -185,7 +246,7 @@ export function useCreateLinktreeAccount({ address, anchorWallet }: { address: P
 
   return useMutation({
     mutationKey: [
-      'transfer-sol',
+      'create-linktree-account',
       { endpoint: connection.rpcEndpoint, address },
     ],
     mutationFn: async (input: { username: string }) => {
@@ -210,9 +271,77 @@ export function useCreateLinktreeAccount({ address, anchorWallet }: { address: P
         console.log(signature);
         return signature;
       } catch (error: unknown) {
-        console.log('error', `Transaction failed! ${error}`, signature);
-
+        console.log('error', `Transaction failed!`, error);
         return;
+      }
+    },
+    onSuccess: (signature) => {
+      if (signature) {
+        transactionToast(signature);
+      }
+      return Promise.all([
+        client.invalidateQueries({
+          queryKey: [
+            'get-balance',
+            { endpoint: connection.rpcEndpoint, address },
+          ],
+        }),
+        client.invalidateQueries({
+          queryKey: [
+            'get-signatures',
+            { endpoint: connection.rpcEndpoint, address },
+          ],
+        }),
+      ]);
+    },
+    onError: (error) => {
+      toast.error(`Transaction failed! ${error}`);
+    },
+  });
+}
+
+export function useDeleteLinktreeAccount({ address, anchorWallet }: { address: PublicKey, anchorWallet: AnchorWallet }) {
+  const { connection } = useConnection();
+  const transactionToast = useTransactionToast();
+  const wallet = useWallet();
+  const client = useQueryClient();
+
+  const anchorProvider = new AnchorProvider(connection, anchorWallet)
+  const program = new Program<Linktree>(idl as Linktree, anchorProvider);
+
+  return useMutation({
+    mutationKey: [
+      'delete-linktree-account',
+      { endpoint: connection.rpcEndpoint, address },
+    ],
+    mutationFn: async (input: { username: string }) => {
+      let signature: TransactionSignature = '';
+      try {
+        const { transaction, latestBlockhash } = await deleteLinktreeAccountTransaction({
+          publicKey: address,
+          username: input.username,
+          connection,
+          program
+        });
+
+        // Send transaction and await for signature
+        signature = await wallet.sendTransaction(transaction, connection);
+
+        // Send transaction and await for signature
+        await connection.confirmTransaction(
+          { signature, ...latestBlockhash },
+          'confirmed'
+        );
+
+        console.log(signature);
+        return signature;
+      } catch (error: unknown) {
+        console.error('Transaction failed:', error);
+        if (error instanceof Error) {
+          console.error('Error message:', error.message);
+          console.error('Error stack:', error.stack);
+        }
+        return
       }
     },
     onSuccess: (signature) => {
@@ -321,6 +450,100 @@ async function createLinktreeAccountTransaction({
   };
 }
 
+async function deleteLinktreeAccountTransaction({
+  publicKey,
+  username,
+  connection,
+  program
+}: {
+  publicKey: PublicKey;
+  username: string,
+  connection: Connection,
+  program: Program<Linktree>
+}): Promise<{
+  transaction: VersionedTransaction;
+  latestBlockhash: { blockhash: string; lastValidBlockHeight: number };
+}> {
+  // Get the latest blockhash to use in our transaction
+  const latestBlockhash = await connection.getLatestBlockhash();
+
+  // Create instructions to send, in this case a simple transfer
+  const instructions: TransactionInstruction[] = [];
+
+  const ix = await program.methods.deleteLinktreeAccount(username)
+  .accounts({owner: publicKey})
+  .instruction()
+
+  instructions.push(ix)
+
+  // Create a new TransactionMessage with version and compile it to legacy
+  const messageLegacy = new TransactionMessage({
+    payerKey: publicKey,
+    recentBlockhash: latestBlockhash.blockhash,
+    instructions,
+  }).compileToLegacyMessage();
+
+  // Create a new VersionedTransaction which supports legacy and v0
+  const transaction = new VersionedTransaction(messageLegacy);
+
+  return {
+    transaction,
+    latestBlockhash,
+  };
+}
+
+async function editSettingsTransaction({
+  publicKey,
+  username,
+  avatarUri,
+  colorHex,
+  connection,
+  program
+}: {
+  publicKey: PublicKey;
+  username: string,
+  avatarUri: string,
+  colorHex: string,
+  connection: Connection,
+  program: Program<Linktree>
+}): Promise<{
+  transaction: VersionedTransaction;
+  latestBlockhash: { blockhash: string; lastValidBlockHeight: number };
+}> {
+  // Get the latest blockhash to use in our transaction
+  const latestBlockhash = await connection.getLatestBlockhash();
+
+  // Create instructions to send, in this case a simple transfer
+  const instructions: TransactionInstruction[] = [];
+  if(avatarUri !== UNCHANGED) {
+    const ix = await program.methods.editAvatarUri(username, avatarUri)
+    .accounts({owner: publicKey})
+    .instruction()
+    instructions.push(ix)
+  }
+  if(colorHex !== UNCHANGED) {
+    const ix = await program.methods.editColorHex(username, colorHex)
+    .accounts({owner: publicKey})
+    .instruction()
+    instructions.push(ix)
+  }
+
+  // Create a new TransactionMessage with version and compile it to legacy
+  const messageLegacy = new TransactionMessage({
+    payerKey: publicKey,
+    recentBlockhash: latestBlockhash.blockhash,
+    instructions,
+  }).compileToLegacyMessage();
+
+  // Create a new VersionedTransaction which supports legacy and v0
+  const transaction = new VersionedTransaction(messageLegacy);
+
+  return {
+    transaction,
+    latestBlockhash,
+  };
+}
+
 
 async function addLinksTransaction({
   publicKey,
@@ -345,7 +568,6 @@ async function addLinksTransaction({
   const instructions: TransactionInstruction[] = [];
   const titles = links.map(l => l.title)
   const urls = links.map(l => l.url)
-  console.log('txn data', username, urls, titles)
   const ix = await program.methods.addLinks(username, urls, titles)
   .accounts({owner: publicKey})
   .instruction()
