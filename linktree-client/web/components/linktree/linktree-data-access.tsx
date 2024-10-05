@@ -20,6 +20,7 @@ import { Linktree } from '@/idl/linktree';
 import idl from '@/idl/linktree.json';
 import { Link, LinktreeAccount } from './types';
 import { UNCHANGED } from './constants';
+import { useRouter } from 'next/navigation';
 
 const LINK_TREE_ACCOUNT_NAME = 'linkTreeAccount'
 
@@ -318,7 +319,7 @@ export function useDeleteLinktreeAccount({ address, anchorWallet }: { address: P
   const { connection } = useConnection();
   const transactionToast = useTransactionToast();
   const wallet = useWallet();
-  const client = useQueryClient();
+  const router = useRouter();
 
   return useMutation({
     mutationKey: [
@@ -364,20 +365,7 @@ export function useDeleteLinktreeAccount({ address, anchorWallet }: { address: P
       if (signature) {
         transactionToast(signature);
       }
-      return Promise.all([
-        client.invalidateQueries({
-          queryKey: [
-            'get-balance',
-            { endpoint: connection.rpcEndpoint, address },
-          ],
-        }),
-        client.invalidateQueries({
-          queryKey: [
-            'get-signatures',
-            { endpoint: connection.rpcEndpoint, address },
-          ],
-        }),
-      ]);
+      return router.push('/linktree')
     },
     onError: (error) => {
       toast.error(`Transaction failed! ${error}`);

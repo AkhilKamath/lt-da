@@ -270,7 +270,7 @@ export function LinktreeAccounts({ address }: { address: PublicKey }) {
                     </td>
                     <td className="text-right">
                       <span className="font-mono">
-                        <a href={`/lt/${pubkey.toString()}`} className='underline'>@{username}</a>
+                        <a href={`/lt/${pubkey.toString()}`} target='_blank' className='underline'>@{username}</a>
                       </span>
                     </td>
                   </tr>
