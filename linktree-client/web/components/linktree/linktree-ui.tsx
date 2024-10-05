@@ -207,11 +207,13 @@ export function LinktreeButtons({ address }: { address: PublicKey }) {
 export function LinktreeAccounts({ address }: { address: PublicKey }) {
   // const [showAll, setShowAll] = useState(false);
   const anchorWallet = useAnchorWallet()
+
+  const query = useGetLinktreeAccounts({ address, anchorWallet });
+  const client = useQueryClient();
+
   if (!address || !anchorWallet) {
     return <div>Wallet not connected 1</div>;
   }
-  const query = useGetLinktreeAccounts({ address, anchorWallet });
-  const client = useQueryClient();
   return (
     <div className="space-y-2">
       <div className="justify-between">
@@ -298,10 +300,6 @@ export function LinktreeAccounts({ address }: { address: PublicKey }) {
 export function LTPage({ pdaAddress }: { pdaAddress: PublicKey }) {
   const anchorWallet = useAnchorWallet()
 
-  if (!pdaAddress || !anchorWallet) {
-    return <div>Wallet not connected ltp</div>;
-  }
-
   const query = useGetLinktreeAccountInfo({ pdaAddress, anchorWallet })
   const client = useQueryClient();
 
@@ -315,6 +313,10 @@ export function LTPage({ pdaAddress }: { pdaAddress: PublicKey }) {
     if(accountInfo)
       setCurrentTheme(hexToColorsKeyMap[accountInfo?.colorHex] || 'yellow')
   }, [accountInfo])
+
+  if (!pdaAddress || !anchorWallet) {
+    return <div>Wallet not connected ltp</div>;
+  }
 
   return (
     <div className={`min-h-screen overflow-auto bg-linktree-bg text-linktree-fg`}>
@@ -438,10 +440,6 @@ function ModalSettings({
   const [colorHex, setColorHex] = useState(currentColorHex || '')
   const [avatarUri, setAvatarUri] = useState(currentAvatarUri || '')
 
-  if (!address || !anchorWallet || !username.length) {
-    return <div>Wallet not connected</div>;
-  }
-
   function shouldSubmitBeDisabled() {
     return mutation.isPending || (colorHex.trim() === '' && avatarUri.trim() === '') || (colorHex === currentColorHex && avatarUri === currentAvatarUri)
   }
@@ -464,6 +462,11 @@ function ModalSettings({
       />
     )
   }
+
+  if (!address || !anchorWallet || !username.length) {
+    return <div>Wallet not connected</div>;
+  }
+
   return (
     <div className='text-white'>
       <AppModal
@@ -532,10 +535,6 @@ function ModalAddLinks({
   const [titles, setTitles] = useState([''])
   const [numLinks, setNumLinks] = useState(1)
 
-  if (!address || !anchorWallet || !username.length) {
-    return <div>Wallet not connected</div>;
-  }
-
   function addFieldRow() {
     setNumLinks(numLinks + 1)
     setUrls([...urls, ''])
@@ -559,6 +558,10 @@ function ModalAddLinks({
   }
 
   const mutation = useAddLinks({ address, anchorWallet, pdaAddress, username })
+
+  if (!address || !anchorWallet || !username.length) {
+    return <div>Wallet not connected</div>;
+  }
 
   const inputFields = Array.from({ length: numLinks }, (_, idx) => {
     return (
@@ -633,11 +636,11 @@ function ModalDeleteAccount({
   const wallet = useWallet();
   const anchorWallet = useAnchorWallet();
 
+  const mutation = useDeleteLinktreeAccount({ address, anchorWallet });
+
   if (!address || !wallet.sendTransaction || !anchorWallet) {
     return <div>Wallet not connected</div>;
   }
-
-  const mutation = useDeleteLinktreeAccount({ address, anchorWallet });
 
   return (
     <div className='text-white'>
@@ -672,12 +675,12 @@ function ModalCreate({
   const wallet = useWallet();
   const anchorWallet = useAnchorWallet();
 
+  const mutation = useCreateLinktreeAccount({ address, anchorWallet });
+  const [username, setUsername] = useState('');
+
   if (!address || !wallet.sendTransaction || !anchorWallet) {
     return <div>Wallet not connected</div>;
   }
-
-  const mutation = useCreateLinktreeAccount({ address, anchorWallet });
-  const [username, setUsername] = useState('');
 
   return (
     <AppModal

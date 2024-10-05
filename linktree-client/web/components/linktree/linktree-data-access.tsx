@@ -41,7 +41,7 @@ export function useGetSignatures({ address }: { address: PublicKey }) {
   });
 }
 
-export function useGetLinktreeAccounts({ address, anchorWallet }: { address: PublicKey, anchorWallet: AnchorWallet }) {
+export function useGetLinktreeAccounts({ address, anchorWallet }: { address: PublicKey, anchorWallet: AnchorWallet|undefined }) {
   const { connection } = useConnection()
   return useQuery({
     queryKey: [
@@ -49,6 +49,7 @@ export function useGetLinktreeAccounts({ address, anchorWallet }: { address: Pub
       { endpoint: connection.rpcEndpoint, address },
     ],
     queryFn: async () => {
+      if(!anchorWallet) return []
       const pdas = await connection.getProgramAccounts(new PublicKey(idl.address));
       const anchorProvider = new AnchorProvider(connection, anchorWallet)
       const program = new Program<Linktree>(idl as Linktree, anchorProvider);
@@ -73,7 +74,7 @@ export function useGetLinktreeAccounts({ address, anchorWallet }: { address: Pub
   })
 }
 
-export function useGetLinktreeAccountInfo({ pdaAddress, anchorWallet }: { pdaAddress: PublicKey, anchorWallet: AnchorWallet }) {
+export function useGetLinktreeAccountInfo({ pdaAddress, anchorWallet }: { pdaAddress: PublicKey, anchorWallet: AnchorWallet|undefined }) {
   const { connection } = useConnection()
   return useQuery({
     queryKey: [
@@ -81,6 +82,7 @@ export function useGetLinktreeAccountInfo({ pdaAddress, anchorWallet }: { pdaAdd
       { endpoint: connection.rpcEndpoint, pdaAddress },
     ],
     queryFn: async () => {
+      if(!anchorWallet) return;
       const anchorProvider = new AnchorProvider(connection, anchorWallet)
       const program = new Program<Linktree>(idl as Linktree, anchorProvider);
       let accountInfo
@@ -94,14 +96,11 @@ export function useGetLinktreeAccountInfo({ pdaAddress, anchorWallet }: { pdaAdd
   }) 
 }
 
-export function useEditSettings({ address, anchorWallet, pdaAddress, username }: { address: PublicKey, anchorWallet: AnchorWallet, pdaAddress: PublicKey, username: string }) {
+export function useEditSettings({ address, anchorWallet, pdaAddress, username }: { address: PublicKey, anchorWallet: AnchorWallet|undefined, pdaAddress: PublicKey, username: string }) {
   const { connection } = useConnection();
   const transactionToast = useTransactionToast();
   const wallet = useWallet();
   const client = useQueryClient();
-
-  const anchorProvider = new AnchorProvider(connection, anchorWallet);
-  const program = new Program<Linktree>(idl as Linktree, anchorProvider);
 
   return useMutation({
     mutationKey: [
@@ -109,6 +108,11 @@ export function useEditSettings({ address, anchorWallet, pdaAddress, username }:
       { endpoint: connection.rpcEndpoint, address },
     ],
     mutationFn: async (input: { avatarUri: string, colorHex: string }) => {
+      if(!anchorWallet) return;
+
+      const anchorProvider = new AnchorProvider(connection, anchorWallet);
+      const program = new Program<Linktree>(idl as Linktree, anchorProvider);
+
       let signature: TransactionSignature = '';
       try {
         const { transaction, latestBlockhash } = await editSettingsTransaction({
@@ -154,14 +158,11 @@ export function useEditSettings({ address, anchorWallet, pdaAddress, username }:
   })
 }
 
-export function useAddLinks({ address, anchorWallet, pdaAddress, username }: { address: PublicKey, anchorWallet: AnchorWallet, pdaAddress: PublicKey, username: string }) {
+export function useAddLinks({ address, anchorWallet, pdaAddress, username }: { address: PublicKey, anchorWallet: AnchorWallet|undefined, pdaAddress: PublicKey, username: string }) {
   const { connection } = useConnection();
   const transactionToast = useTransactionToast();
   const wallet = useWallet();
   const client = useQueryClient();
-
-  const anchorProvider = new AnchorProvider(connection, anchorWallet)
-  const program = new Program<Linktree>(idl as Linktree, anchorProvider);
 
   return useMutation({
     mutationKey: [
@@ -169,6 +170,11 @@ export function useAddLinks({ address, anchorWallet, pdaAddress, username }: { a
       { endpoint: connection.rpcEndpoint, address }
     ],
     mutationFn: async (input: { links: Link[] }) => {
+      if(!anchorWallet) return;
+
+      const anchorProvider = new AnchorProvider(connection, anchorWallet)
+      const program = new Program<Linktree>(idl as Linktree, anchorProvider);
+
       let signature: TransactionSignature = '';
       try {
         const { transaction, latestBlockhash } = await addLinksTransaction({
@@ -236,14 +242,11 @@ export function useGetTokenAccounts({ address }: { address: PublicKey }) {
   });
 }
 
-export function useCreateLinktreeAccount({ address, anchorWallet }: { address: PublicKey, anchorWallet: AnchorWallet }) {
+export function useCreateLinktreeAccount({ address, anchorWallet }: { address: PublicKey, anchorWallet: AnchorWallet|undefined }) {
   const { connection } = useConnection();
   const transactionToast = useTransactionToast();
   const wallet = useWallet();
   const client = useQueryClient();
-
-  const anchorProvider = new AnchorProvider(connection, anchorWallet)
-  const program = new Program<Linktree>(idl as Linktree, anchorProvider);
 
   return useMutation({
     mutationKey: [
@@ -251,6 +254,11 @@ export function useCreateLinktreeAccount({ address, anchorWallet }: { address: P
       { endpoint: connection.rpcEndpoint, address },
     ],
     mutationFn: async (input: { username: string }) => {
+      if(!anchorWallet) return;
+
+      const anchorProvider = new AnchorProvider(connection, anchorWallet)
+      const program = new Program<Linktree>(idl as Linktree, anchorProvider);
+
       let signature: TransactionSignature = '';
       try {
         const { transaction, latestBlockhash } = await createLinktreeAccountTransaction({
@@ -301,14 +309,11 @@ export function useCreateLinktreeAccount({ address, anchorWallet }: { address: P
   });
 }
 
-export function useDeleteLinktreeAccount({ address, anchorWallet }: { address: PublicKey, anchorWallet: AnchorWallet }) {
+export function useDeleteLinktreeAccount({ address, anchorWallet }: { address: PublicKey, anchorWallet: AnchorWallet|undefined }) {
   const { connection } = useConnection();
   const transactionToast = useTransactionToast();
   const wallet = useWallet();
   const client = useQueryClient();
-
-  const anchorProvider = new AnchorProvider(connection, anchorWallet)
-  const program = new Program<Linktree>(idl as Linktree, anchorProvider);
 
   return useMutation({
     mutationKey: [
@@ -316,6 +321,11 @@ export function useDeleteLinktreeAccount({ address, anchorWallet }: { address: P
       { endpoint: connection.rpcEndpoint, address },
     ],
     mutationFn: async (input: { username: string }) => {
+      if(!anchorWallet) return;
+
+      const anchorProvider = new AnchorProvider(connection, anchorWallet)
+      const program = new Program<Linktree>(idl as Linktree, anchorProvider);
+
       let signature: TransactionSignature = '';
       try {
         const { transaction, latestBlockhash } = await deleteLinktreeAccountTransaction({
