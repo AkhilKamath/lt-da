@@ -212,7 +212,7 @@ export function LinktreeAccounts({ address }: { address: PublicKey }) {
   }
   const query = useGetLinktreeAccounts({ address, anchorWallet });
   const client = useQueryClient();
-
+  console.log("ABCDEFG", query.data)
   return (
     <div className="space-y-2">
       <div className="justify-between">
