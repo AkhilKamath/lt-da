@@ -70,7 +70,8 @@ export function useGetLinktreeAccounts({ address, anchorWallet }: { address: Pub
         })
       )
       return pdaAccounts.filter((acc): acc is LinktreeAccount => !!acc);
-    }
+    },
+    enabled: !!anchorWallet
   })
 }
 
@@ -82,7 +83,10 @@ export function useGetLinktreeAccountInfo({ pdaAddress, anchorWallet }: { pdaAdd
       { endpoint: connection.rpcEndpoint, pdaAddress },
     ],
     queryFn: async () => {
-      if(!anchorWallet) return;
+      if (!anchorWallet) {
+        throw new Error('Wallet not connected');
+      }
+
       const anchorProvider = new AnchorProvider(connection, anchorWallet)
       const program = new Program<Linktree>(idl as Linktree, anchorProvider);
       let accountInfo
@@ -92,7 +96,8 @@ export function useGetLinktreeAccountInfo({ pdaAddress, anchorWallet }: { pdaAdd
         console.error('error in fetching account info', error)
       }
       return accountInfo
-    }
+    },
+    enabled: !!anchorWallet
   }) 
 }
 
