@@ -20,6 +20,8 @@ import { Linktree } from '@/idl/linktree';
 import idl from '@/idl/linktree.json';
 import { Link } from './types';
 
+const LINK_TREE_ACCOUNT_NAME = 'linkTreeAccount'
+
 export function useGetBalance({ address }: { address: PublicKey }) {
   const { connection } = useConnection();
 
@@ -52,6 +54,11 @@ export function useGetLinktreeAccounts({ address, anchorWallet }: { address: Pub
       const usernames = await Promise.all(
         pdas.map(async pda => {
           try {
+            const accountData = program.coder.accounts.decode(
+              LINK_TREE_ACCOUNT_NAME,
+              pda.account.data
+            );
+            if(accountData?.owner.toString() !== address.toString()) return
             const account = await program.account.linkTreeAccount.fetch(pda.pubkey)
             return {username: account.username, pubkey: pda.pubkey, owner: account.owner}
           } catch (error) {

@@ -139,7 +139,7 @@ export function AccountTokens({ address }: { address: PublicKey }) {
                 onClick={async () => {
                   await query.refetch();
                   await client.invalidateQueries({
-                    queryKey: ['getTokenAccountBalance'],
+                    queryKey: ['get-balance'],// TODO
                   });
                 }}
               >

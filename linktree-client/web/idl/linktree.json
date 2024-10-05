@@ -208,6 +208,106 @@
           "type": "string"
         }
       ]
+    },
+    {
+      "name": "edit_avatar_uri",
+      "discriminator": [
+        124,
+        192,
+        124,
+        194,
+        10,
+        230,
+        97,
+        1
+      ],
+      "accounts": [
+        {
+          "name": "linktree_account",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "arg",
+                "path": "username"
+              },
+              {
+                "kind": "account",
+                "path": "owner"
+              }
+            ]
+          }
+        },
+        {
+          "name": "owner",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "_username",
+          "type": "string"
+        },
+        {
+          "name": "avatar_uri",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "edit_color_hex",
+      "discriminator": [
+        110,
+        17,
+        62,
+        124,
+        31,
+        225,
+        137,
+        210
+      ],
+      "accounts": [
+        {
+          "name": "linktree_account",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "arg",
+                "path": "username"
+              },
+              {
+                "kind": "account",
+                "path": "owner"
+              }
+            ]
+          }
+        },
+        {
+          "name": "owner",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "_username",
+          "type": "string"
+        },
+        {
+          "name": "color_hex",
+          "type": "string"
+        }
+      ]
     }
   ],
   "accounts": [
@@ -271,6 +371,10 @@
             "type": "string"
           },
           {
+            "name": "avatar_uri",
+            "type": "string"
+          },
+          {
             "name": "links",
             "type": {
               "vec": {
@@ -283,6 +387,10 @@
           {
             "name": "link_counter",
             "type": "u64"
+          },
+          {
+            "name": "color_hex",
+            "type": "string"
           }
         ]
       }

@@ -1,11 +1,11 @@
 'use client';
-import {motion} from 'framer-motion'
+import { motion } from 'framer-motion'
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Skeleton } from "@/components/ui/skeleton"
 
 import { useAnchorWallet, useWallet } from '@solana/wallet-adapter-react';
 import { LAMPORTS_PER_SOL, PublicKey } from '@solana/web3.js';
-import { IconRefresh } from '@tabler/icons-react';
+import { IconPlus, IconRefresh, IconSettings2 } from '@tabler/icons-react';
 import { useQueryClient, UseQueryResult } from '@tanstack/react-query';
 import { useEffect, useMemo, useState } from 'react';
 import { AppModal, ellipsify } from '../ui/ui-layout';
@@ -19,7 +19,10 @@ import {
   useGetLinktreeAccounts,
   useRequestAirdrop,
 } from './linktree-data-access';
-import { Link } from './types';
+import { Link, LTAccountInfo } from './types';
+
+import { styles } from './styles';
+import { colors } from './colors';
 
 export function AccountBalance({ address }: { address: PublicKey }) {
   const query = useGetBalance({ address });
@@ -71,9 +74,10 @@ export function AccountBalanceCheck({ address }: { address: PublicKey }) {
   return null;
 }
 
-export function LTAddLinks({ address, pdaAddress, username}: {address: PublicKey, pdaAddress: PublicKey, username: string}) {
+export function LTButtons({ address, pdaAddress, accountInfo }: { address: PublicKey, pdaAddress: PublicKey, accountInfo: LTAccountInfo|undefined }) {
   const wallet = useWallet();
-  const [showModal, setShowModal] = useState(false);
+  const [showAddLinksModal, setShowAddLinksModal] = useState(false);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
 
   function isButtonDisabled() {
     return wallet.publicKey?.toString() !== address.toString()
@@ -81,39 +85,65 @@ export function LTAddLinks({ address, pdaAddress, username}: {address: PublicKey
 
   return (
     <div>
-      <ModalAddLinks
-        hide={() => setShowModal(false)}
-        show={showModal}
+      <ModalSettings
+        hide={() => setShowSettingsModal(false)}
+        show={showSettingsModal}
         address={address}
         pdaAddress={pdaAddress}
-        username={username}
+        username={accountInfo?.username || ''}
+        accountInfo={accountInfo}
       />
-      <div className="space-x-2">
-        {
-          !isButtonDisabled() &&
-          <motion.button
-            disabled={isButtonDisabled()}
-            className="px-5 py-2 rounded-lg border border-linktree-fg hover:cursor-pointer 
-            disabled:opacity-50 disabled:cursor-not-allowed 
-            disabled:bg-linktree-bg disabled:border-linktree-fg/30 disabled:text-linktree-fg/50
-            transition-all duration-300
-            "
-            onClick={() => { console.log('ss2'); setShowModal(true) }}
-            whileHover={isButtonDisabled() ? undefined : "hover"}
-            variants={{
-              hover: {
-                scale: 1.05,
-                boxShadow: "0 0 15px var(--lt-foreground)",
-                filter: "brightness(1.2)",
-                transition: {
-                  duration: 0.3
-                }
-              }
-            }}
-          >
-            Add Link
-          </motion.button>
+      <ModalAddLinks
+        hide={() => setShowAddLinksModal(false)}
+        show={showAddLinksModal}
+        address={address}
+        pdaAddress={pdaAddress}
+        username={accountInfo?.username || ''}
+      />
+      <div className="flex space-x-2">
+        {!isButtonDisabled() && 
+          <>
+            <motion.button
+              className={styles.ltPageButton}
+              disabled={isButtonDisabled()}
+              onClick={() => setShowSettingsModal(true)}
+              whileHover={{
+                scale: 1.025,
+              }}
+              whileTap={{
+                scale: 0.955,
+              }}
+            >
+              <IconSettings2 size={20} />
+            </motion.button>
+            <motion.button
+              className={styles.ltPageButton}
+              disabled={isButtonDisabled()}
+              onClick={() => setShowAddLinksModal(true)}
+              whileHover={{
+                scale: 1.025,
+              }}
+              whileTap={{
+                scale: 0.955,
+              }}
+            >
+              <IconPlus size={20} />
+            </motion.button>
+          </>
         }
+        <motion.button
+          disabled={isButtonDisabled()}
+          className={styles.ltPageButton}
+          // onClick={() => setShowAddLinksModal(true)}
+          whileHover={{
+            scale: 1.025,
+          }}
+          whileTap={{
+            scale: 0.955,
+          }}
+        >
+          <IconRefresh size={20} />
+        </motion.button>
       </div>
     </div>
   )
@@ -146,16 +176,16 @@ export function LinktreeButtons({ address }: { address: PublicKey }) {
 export function LinktreeAccounts({ address }: { address: PublicKey }) {
   const [showAll, setShowAll] = useState(false);
   const anchorWallet = useAnchorWallet()
-  if (!address || !anchorWallet ) {
+  if (!address || !anchorWallet) {
     return <div>Wallet not connected 1</div>;
   }
-  const ltAccountInfoQuery = useGetLinktreeAccounts( { address, anchorWallet });
+  const query = useGetLinktreeAccounts({ address, anchorWallet });
   const client = useQueryClient();
 
   const ltAccountInfoItems = useMemo(() => {
-    if (showAll) return ltAccountInfoQuery.data
-    return ltAccountInfoQuery.data?.slice(0, 5)
-  }, [ltAccountInfoQuery.data, showAll])
+    if (showAll) return query.data
+    return query.data?.slice(0, 5)
+  }, [query.data, showAll])
 
   return (
     <div className="space-y-2">
@@ -163,15 +193,15 @@ export function LinktreeAccounts({ address }: { address: PublicKey }) {
         <div className="flex justify-between">
           <h2 className="text-2xl font-bold">Linktree Accounts</h2>
           <div className="space-x-2">
-            {ltAccountInfoQuery.isLoading ? (
+            {query.isLoading ? (
               <span className="loading loading-spinner"></span>
             ) : (
               <button
                 className="btn btn-sm btn-outline"
                 onClick={async () => {
-                  await ltAccountInfoQuery.refetch();
+                  await query.refetch();
                   await client.invalidateQueries({
-                    queryKey: ['getTokenAccountBalance'],
+                    queryKey: ['get-balance'], // TODO
                   });
                 }}
               >
@@ -181,14 +211,14 @@ export function LinktreeAccounts({ address }: { address: PublicKey }) {
           </div>
         </div>
       </div>
-      {ltAccountInfoQuery.isError && (
+      {query.isError && (
         <pre className="alert alert-error">
-          Error: {ltAccountInfoQuery.error?.message.toString()}
+          Error: {query.error?.message.toString()}
         </pre>
       )}
-      {ltAccountInfoQuery.isSuccess && (
+      {query.isSuccess && (
         <div>
-          {ltAccountInfoQuery.data.length === 0 ? (
+          {query.data.length === 0 ? (
             <div>No linktree accounts found.</div>
           ) : (
             <table className="table border-4 rounded-lg border-separate border-base-300">
@@ -219,7 +249,7 @@ export function LinktreeAccounts({ address }: { address: PublicKey }) {
                   </tr>
                 ))}
 
-                {(ltAccountInfoQuery.data?.length ?? 0) > 5 && (
+                {(query.data?.length ?? 0) > 5 && (
                   <tr>
                     <td colSpan={4} className="text-center">
                       <button
@@ -239,104 +269,99 @@ export function LinktreeAccounts({ address }: { address: PublicKey }) {
     </div>
   );
 }
-interface LTAccountInfo {
-  owner: PublicKey;
-  username: string;
-  links: any[];
-}
 
 export function LTPage({ pdaAddress }: { pdaAddress: PublicKey }) {
   const anchorWallet = useAnchorWallet()
-  
-  if (!pdaAddress || !anchorWallet ) {
+
+  if (!pdaAddress || !anchorWallet) {
     return <div>Wallet not connected ltp</div>;
   }
-  
+
   const query = useGetLinktreeAccountInfo({ pdaAddress, anchorWallet })
   const client = useQueryClient();
 
   const accountInfo = useMemo(() => {
     return query.data
-  },[query.data])
+  }, [query.data])
 
   return (
     <div className={`min-h-screen overflow-auto bg-linktree-bg text-linktree-fg`}>
-        {
-          query.isError && (<pre className="alert alert-error">
-            Error: {query.error?.message.toString()}
-          </pre>)
-        }
-        {
-          query.isSuccess && (
-            <div className="container mx-auto px-4 py-8 flex flex-col items-center">
-              <div className="mx-auto px-4 py-8">
-                <LTPageHero isLoading={query.isLoading} accountInfo={accountInfo} />
-              </div>
-                <LTAddLinks address={accountInfo?.owner || new PublicKey('')} pdaAddress={pdaAddress} username={accountInfo?.username || ''}/>
-                <LTLinksList isLoading={query.isLoading} accountInfo={accountInfo} />
+      {
+        query.isError && (<pre className="alert alert-error">
+          Error: {query.error?.message.toString()}
+        </pre>)
+      }
+      {
+        query.isSuccess && (
+          <div className="container mx-auto px-4 py-8 flex flex-col items-center">
+            <div className="mx-auto px-4 py-8">
+              <LTPageHero isLoading={query.isLoading} accountInfo={accountInfo} />
             </div>
-          )
-        }
+            <LTButtons address={accountInfo?.owner || new PublicKey('')} pdaAddress={pdaAddress} accountInfo={accountInfo} />
+            <LTLinksList isLoading={query.isLoading} accountInfo={accountInfo} />
+          </div>
+        )
+      }
     </div>
   )
 }
 
-export function LTPageHero({isLoading, accountInfo}: {isLoading: boolean, accountInfo: LTAccountInfo|undefined}) {
+export function LTPageHero({ isLoading, accountInfo }: { isLoading: boolean, accountInfo: LTAccountInfo | undefined }) {
   return (
     isLoading ? <div className='flex flex-col items-center'>
-      <Skeleton className='h-28 w-28 rounded-full'/>
+      <Skeleton className='h-28 w-28 rounded-full' />
       <Skeleton className='h-4 w-[100px] mt-2' />
     </div> :
-    <div className='flex flex-col items-center'>
-      <Avatar>
-        <AvatarImage src="https://github.com/shadcn.png"/>
-        <AvatarFallback>{accountInfo?.username}</AvatarFallback>
-      </Avatar>
-      <span className='font-semibold mt-2'>@{accountInfo?.username}</span>
-    </div>
+      <div className='flex flex-col items-center'>
+        <Avatar>
+          <AvatarImage src="https://github.com/shadcn.png" />
+          <AvatarFallback>{accountInfo?.username}</AvatarFallback>
+        </Avatar>
+        <span className='font-semibold mt-2'>@{accountInfo?.username}</span>
+      </div>
   )
 }
 
-export function LTLink({title, url}: {title: string, url: string}) {
+export function LTLink({ title, url }: { title: string, url: string }) {
   return (
     <motion.a href={url} target="_blank" className='block py-5 rounded-full border border-linktree text-center font-bold'
-    variants={{
-      hover: {
-        scale: 1.05,
-        backgroundColor: 'var(--lt-foreground)',
-        color: 'var(--lt-background)'
-      }
-    }}
-    whileHover={"hover"}
+      variants={{
+        hover: {
+          scale: 1.05,
+          backgroundColor: 'var(--lt-foreground)',
+          color: 'var(--lt-background)'
+        }
+      }}
+      whileHover={"hover"}
     >
       {title}
     </motion.a>
   )
 }
 
-export function LTLinksList({isLoading, accountInfo}: {isLoading: boolean, accountInfo: LTAccountInfo|undefined}) {
+export function LTLinksList({ isLoading, accountInfo }: { isLoading: boolean, accountInfo: LTAccountInfo|undefined }) {
   return (
-    isLoading ? 
-    <div className='mt-8 w-full sm:w-1/2'>
-      <ul>
-        <li>
-          <Skeleton className='h-[75px] py-5 rounded-full' />
-        </li>
-      </ul>
-    </div> :
-    <div className='mt-8 w-full sm:w-1/2'>
-      <ul className='space-y-5'>
-        {
-          accountInfo?.links.map((link, idx) => {
-            return (
-              <li key={idx}>
-                <LTLink title={link.title} url={link.url}/>
-              </li>
-            )
-          })
-        }
-      </ul>
-    </div>
+    isLoading ?
+      <div className='mt-8 w-full sm:w-1/2'>
+        <ul>
+          <li>
+            <Skeleton className='h-[75px] py-5 rounded-full' />
+          </li>
+        </ul>
+      </div> :
+      <div className='mt-8 w-full sm:w-1/2'>
+        <ul className='space-y-5'>
+          {
+            accountInfo?.links.map((link, idx) => {
+              return (
+                <li key={idx}>
+                  <LTLink title={link.title} url={link.url} />
+                </li>
+              )
+            })
+          }
+        </ul>
+      </div>
   )
 }
 
@@ -344,6 +369,103 @@ function BalanceSol({ balance }: { balance: number }) {
   return (
     <span>{Math.round((balance / LAMPORTS_PER_SOL) * 100000) / 100000}</span>
   );
+}
+
+function ModalSettings({
+  hide,
+  show,
+  address,
+  pdaAddress,
+  username,
+  accountInfo,
+}: {
+  hide: () => void,
+  show: boolean,
+  address: PublicKey,
+  pdaAddress: PublicKey,
+  username: string,
+  accountInfo: LTAccountInfo|undefined,
+}) {
+  const anchorWallet = useAnchorWallet();
+
+  const [colorHex, setColorHex] = useState(accountInfo?.colorHex || '')
+  const [avatarURI, setAvatarURI] = useState(accountInfo?.avatarUri || '')
+
+  if (!address || !anchorWallet || !username.length) {
+    return <div>Wallet not connected</div>;
+  }
+
+  function shouldSubmitBeDisabled() {
+    return mutation.isPending || colorHex.trim() === '' || avatarURI.trim() === ''
+  }
+
+  const mutation = useAddLinks({ address, anchorWallet, pdaAddress, username })
+
+  function ColorSquare({color}: {color: {'--lt-background': string}}) {
+    return (
+      <motion.div className='input input-bordered w-10 h-10 cursor-pointer' 
+        style={{
+          backgroundColor: color['--lt-background']
+        }}
+        whileTap={{
+          scale: 0.95
+        }}
+        whileHover={{
+          scale: 1.05
+        }}
+        onClick={() => setColorHex(color['--lt-background'])}
+      />
+    )
+  }
+  return (
+    <div className='text-white'>
+      <AppModal
+        hide={hide}
+        show={show}
+        title='Settings'
+        submitDisabled={shouldSubmitBeDisabled()}
+        submit={() => {
+          // const links: Link[] = []
+          // urls.forEach((url, idx) => {
+          //   links.push({
+          //     url: url.trim(),
+          //     title: titles[idx].trim()
+          //   })
+          // })
+          // mutation
+          //   .mutateAsync({ links })
+          //   .then(() => hide())
+        }}
+
+      >
+        <label htmlFor='avatarURI'>Avatar URI</label>
+        <input
+          name='avatarURI'
+          disabled={mutation.isPending}
+          type="url"
+          placeholder="title"
+          className="input input-bordered w-full"
+          value={avatarURI}
+          onChange={(e) => setAvatarURI(e.target.value)}
+        />
+        <label htmlFor='colorHex'>Color</label>
+        <input
+          hidden={true}
+          name='colorHex'
+          type="color"
+          value={colorHex}
+        />
+        <div className='grid grid-cols-3 w-1/4 gap-y-2 place-items-center'>
+          <ColorSquare color={colors.red}/>
+          <ColorSquare color={colors.yellow}/>
+          <ColorSquare color={colors.green}/>
+          <ColorSquare color={colors.blue}/>
+          <ColorSquare color={colors.violet}/>
+          <ColorSquare color={colors.pink}/>
+        </div>
+      </AppModal>
+    </div>
+  )
 }
 
 function ModalAddLinks({
@@ -365,7 +487,7 @@ function ModalAddLinks({
   const [titles, setTitles] = useState([''])
   const [numLinks, setNumLinks] = useState(1)
 
-  if (!address || !anchorWallet || !username.length ) {
+  if (!address || !anchorWallet || !username.length) {
     return <div>Wallet not connected</div>;
   }
 
@@ -382,43 +504,43 @@ function ModalAddLinks({
   }
 
   function shouldSubmitBeDisabled() {
-    if(mutation.isPending)
+    if (mutation.isPending)
       return true
-    if(urls.some(val => val.trim() === ''))
+    if (urls.some(val => val.trim() === ''))
       return true
-    if(titles.some(val => val.trim() === ''))
+    if (titles.some(val => val.trim() === ''))
       return true
     return false
   }
 
-  const mutation = useAddLinks({address, anchorWallet, pdaAddress, username})
+  const mutation = useAddLinks({ address, anchorWallet, pdaAddress, username })
 
-  const inputFields = Array.from({length: numLinks}, (_, idx) => {
+  const inputFields = Array.from({ length: numLinks }, (_, idx) => {
     return (
       <div key={idx} className='flex space-x-5'>
-          <input
-              disabled={mutation.isPending}
-              type="text"
-              placeholder="title"
-              className="input input-bordered"
-              value={titles[idx]}
-              onChange={(e) => setTitles(prev => prev.map((title, i) => i === idx ? e.target.value : title))}
-          />
-          <input
-            disabled={mutation.isPending}
-            type="text"
-            placeholder="url"
-            className="input input-bordered"
-            value={urls[idx]}
-            onChange={(e) => setUrls(prev => prev.map((url, i) => i === idx ? e.target.value : url))}
-          />
-          <div className="space-x-2">
-            <button className='btn btn-square' disabled={numLinks === 1 && idx === 0} onClick={() => removeFieldRow(idx)}>-</button>
-            {
-              idx === numLinks - 1 &&
-              <button className='btn btn-square' onClick={addFieldRow}>+</button>
-            }
-          </div>
+        <input
+          disabled={mutation.isPending}
+          type="text"
+          placeholder="title"
+          className="input input-bordered"
+          value={titles[idx]}
+          onChange={(e) => setTitles(prev => prev.map((title, i) => i === idx ? e.target.value : title))}
+        />
+        <input
+          disabled={mutation.isPending}
+          type="text"
+          placeholder="url"
+          className="input input-bordered"
+          value={urls[idx]}
+          onChange={(e) => setUrls(prev => prev.map((url, i) => i === idx ? e.target.value : url))}
+        />
+        <div className="space-x-2">
+          <button className='btn btn-square' disabled={numLinks === 1 && idx === 0} onClick={() => removeFieldRow(idx)}>-</button>
+          {
+            idx === numLinks - 1 &&
+            <button className='btn btn-square' onClick={addFieldRow}>+</button>
+          }
+        </div>
       </div>
     )
   })
@@ -439,8 +561,8 @@ function ModalAddLinks({
             })
           })
           mutation
-          .mutateAsync({links})
-          .then(() => hide())
+            .mutateAsync({ links })
+            .then(() => hide())
         }}
 
       >
@@ -462,10 +584,10 @@ function ModalCreate({
   const wallet = useWallet();
   const anchorWallet = useAnchorWallet();
 
-  if (!address || !wallet.sendTransaction || !anchorWallet ) {
+  if (!address || !wallet.sendTransaction || !anchorWallet) {
     return <div>Wallet not connected</div>;
   }
-  
+
   const mutation = useCreateLinktreeAccount({ address, anchorWallet });
   const [username, setUsername] = useState('');
 
@@ -478,7 +600,7 @@ function ModalCreate({
       submitLabel="Create"
       submit={() => {
         mutation
-          .mutateAsync({username})
+          .mutateAsync({ username })
           .then(() => hide());
       }}
     >

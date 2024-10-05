@@ -214,6 +214,106 @@ export type Linktree = {
           "type": "string"
         }
       ]
+    },
+    {
+      "name": "editAvatarUri",
+      "discriminator": [
+        124,
+        192,
+        124,
+        194,
+        10,
+        230,
+        97,
+        1
+      ],
+      "accounts": [
+        {
+          "name": "linktreeAccount",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "arg",
+                "path": "username"
+              },
+              {
+                "kind": "account",
+                "path": "owner"
+              }
+            ]
+          }
+        },
+        {
+          "name": "owner",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "systemProgram",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "username",
+          "type": "string"
+        },
+        {
+          "name": "avatarUri",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "editColorHex",
+      "discriminator": [
+        110,
+        17,
+        62,
+        124,
+        31,
+        225,
+        137,
+        210
+      ],
+      "accounts": [
+        {
+          "name": "linktreeAccount",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "arg",
+                "path": "username"
+              },
+              {
+                "kind": "account",
+                "path": "owner"
+              }
+            ]
+          }
+        },
+        {
+          "name": "owner",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "systemProgram",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "username",
+          "type": "string"
+        },
+        {
+          "name": "colorHex",
+          "type": "string"
+        }
+      ]
     }
   ],
   "accounts": [
@@ -277,6 +377,10 @@ export type Linktree = {
             "type": "string"
           },
           {
+            "name": "avatarUri",
+            "type": "string"
+          },
+          {
             "name": "links",
             "type": {
               "vec": {
@@ -289,6 +393,10 @@ export type Linktree = {
           {
             "name": "linkCounter",
             "type": "u64"
+          },
+          {
+            "name": "colorHex",
+            "type": "string"
           }
         ]
       }
