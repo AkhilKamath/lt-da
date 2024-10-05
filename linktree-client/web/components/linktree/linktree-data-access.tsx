@@ -68,7 +68,7 @@ export function useGetLinktreeAccounts({ address, anchorWallet }: { address: Pub
           }
         })
       )
-      return pdaAccounts.filter((acc): acc is LinktreeAccount => acc !== null);
+      return pdaAccounts.filter((acc): acc is LinktreeAccount => !!acc);
     }
   })
 }
