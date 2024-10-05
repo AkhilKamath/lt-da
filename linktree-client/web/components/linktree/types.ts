@@ -6,6 +6,12 @@ export interface Link {
   url: string
 }
 
+export interface LinktreeAccount {
+  username: string;
+  pubkey: PublicKey;
+  owner: PublicKey;
+}
+
 export interface LTAccountInfo {
   owner: PublicKey;
   username: string;

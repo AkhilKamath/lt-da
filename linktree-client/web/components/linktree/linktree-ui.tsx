@@ -205,18 +205,13 @@ export function LinktreeButtons({ address }: { address: PublicKey }) {
 }
 
 export function LinktreeAccounts({ address }: { address: PublicKey }) {
-  const [showAll, setShowAll] = useState(false);
+  // const [showAll, setShowAll] = useState(false);
   const anchorWallet = useAnchorWallet()
   if (!address || !anchorWallet) {
     return <div>Wallet not connected 1</div>;
   }
   const query = useGetLinktreeAccounts({ address, anchorWallet });
   const client = useQueryClient();
-
-  const ltAccountInfoItems = useMemo(() => {
-    if (showAll) return query.data
-    return query.data?.slice(0, 5)
-  }, [query.data, showAll])
 
   return (
     <div className="space-y-2">
@@ -260,7 +255,7 @@ export function LinktreeAccounts({ address }: { address: PublicKey }) {
                 </tr>
               </thead>
               <tbody>
-                {ltAccountInfoItems?.map(({ username, pubkey }) => (
+                {query.data.map(({ username, pubkey }) => (
                   <tr key={pubkey.toString()}>
                     <td>
                       <div className="flex space-x-2">
@@ -280,7 +275,7 @@ export function LinktreeAccounts({ address }: { address: PublicKey }) {
                   </tr>
                 ))}
 
-                {(query.data?.length ?? 0) > 5 && (
+                {/* {(query.data?.length ?? 0) > 5 && (
                   <tr>
                     <td colSpan={4} className="text-center">
                       <button
@@ -291,7 +286,7 @@ export function LinktreeAccounts({ address }: { address: PublicKey }) {
                       </button>
                     </td>
                   </tr>
-                )}
+                )} */}
               </tbody>
             </table>
           )}

@@ -18,7 +18,7 @@ import { useTransactionToast } from '../ui/ui-layout';
 import { AnchorProvider, Program, Wallet } from '@coral-xyz/anchor';
 import { Linktree } from '@/idl/linktree';
 import idl from '@/idl/linktree.json';
-import { Link } from './types';
+import { Link, LinktreeAccount } from './types';
 import { UNCHANGED } from './constants';
 
 const LINK_TREE_ACCOUNT_NAME = 'linkTreeAccount'
@@ -52,7 +52,7 @@ export function useGetLinktreeAccounts({ address, anchorWallet }: { address: Pub
       const pdas = await connection.getProgramAccounts(new PublicKey(idl.address));
       const anchorProvider = new AnchorProvider(connection, anchorWallet)
       const program = new Program<Linktree>(idl as Linktree, anchorProvider);
-      const usernames = await Promise.all(
+      const pdaAccounts = await Promise.all(
         pdas.map(async pda => {
           try {
             const accountData = program.coder.accounts.decode(
@@ -64,10 +64,11 @@ export function useGetLinktreeAccounts({ address, anchorWallet }: { address: Pub
             return {username: account.username, pubkey: pda.pubkey, owner: account.owner}
           } catch (error) {
             console.error('error in fetching account info', error)
+            return null
           }
         })
       )
-      return usernames.filter(username => !!username)
+      return pdaAccounts.filter((acc): acc is LinktreeAccount => acc !== null);
     }
   })
 }
